@@ -135,13 +135,13 @@
     </div>
 
     <div class="box">
-      <h2 id="lesson-title">Reciprocating Steam Engine (High-Precision GLB)</h2>
-      <p id="lesson-desc">A detailed mechanical assembly featuring crank mechanisms, cylinders, valves, and linkages rendered in real-time 3D PBR materials.</p>
+      <h2 id="lesson-title">2-Cylinder Mechanical Engine (Pro GLB)</h2>
+      <p id="lesson-desc">High-precision CAD 3D model of a two-cylinder internal combustion engine showing pistons, crankshaft, gears, and valves.</p>
     </div>
 
     <div class="box">
       <h2 id="quiz-header" style="font-size: 14px; color: var(--accent);">Concept Verification</h2>
-      <p id="quiz-question" style="font-size: 12px;">What is the primary function of the crank mechanism in a reciprocating engine?</p>
+      <p id="quiz-question" style="font-size: 12px;">Which component converts linear piston motion into rotational motion?</p>
       <div id="quiz-options"></div>
     </div>
   </aside>
@@ -162,10 +162,10 @@
 
     let currentLang = 'en';
 
-    // Curated High-Precision Open-Source 3D GLB Library (Khronos Official CDN)
+    // Direct CORS-Enabled Open-Source 3D GLB Library
     const ASSET_LIBRARY = {
       engine: {
-        url: 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/2CylinderEngine/glTF-Binary/2CylinderEngine.glb',
+        url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/2CylinderEngine/glTF-Binary/2CylinderEngine.glb',
         scale: 0.012,
         title: { en: '2-Cylinder Mechanical Engine (Pro GLB)', ar: 'محرك ميكانيكي ثنائي الأسطوانات (مجسم احترافي جاهز)' },
         desc: {
@@ -178,7 +178,7 @@
         }
       },
       helmet: {
-        url: 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
+        url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
         scale: 2.2,
         title: { en: 'PBR Metallic Sci-Fi Helmet (Pro GLB)', ar: 'خوذة مدرعة عالية الدقة (مجسم PBR جاهز)' },
         desc: {
@@ -191,7 +191,7 @@
         }
       },
       car: {
-        url: 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/ToyCar/glTF-Binary/ToyCar.glb',
+        url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/ToyCar/glTF-Binary/ToyCar.glb',
         scale: 85,
         title: { en: 'Mechanical Vehicle Chassis (Pro GLB)', ar: 'هيكل مركبة ميكانيكية (مجسم جاهز)' },
         desc: {
@@ -204,7 +204,7 @@
         }
       },
       fox: {
-        url: 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/Fox/glTF-Binary/Fox.glb',
+        url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF-Binary/Fox.glb',
         scale: 0.04,
         title: { en: 'Skeletal Animated 3D Model (Pro GLB)', ar: 'نموذج ثلاثي الأبعاد بحركة هيكلية (Skeletal Animation)' },
         desc: {
@@ -280,17 +280,17 @@
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.25;
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
     keyLight.position.set(6, 12, 8);
     scene.add(keyLight);
-    const fillLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+    const fillLight = new THREE.DirectionalLight(0x38bdf8, 1.3);
     fillLight.position.set(-6, 4, -6);
     scene.add(fillLight);
 
@@ -331,7 +331,6 @@
       });
     }
 
-    // 1. Load High-Precision GLB from Library
     window.loadLibraryAsset = function (assetKey) {
       const asset = ASSET_LIBRARY[assetKey];
       if (!asset) return;
@@ -347,7 +346,6 @@
         const model = gltf.scene;
         model.scale.set(asset.scale, asset.scale, asset.scale);
 
-        // Center model automatically
         const box = new THREE.Box3().setFromObject(model);
         const center = box.getCenter(new THREE.Vector3());
         model.position.sub(center);
@@ -370,7 +368,6 @@
       });
     };
 
-    // 2. Fallback Procedural AI Builder
     function executeProceduralBuilder(data) {
       clearCurrentScene();
       document.getElementById('source-indicator').innerText = 'AI PROCEDURAL 3D';
@@ -392,7 +389,6 @@
       });
     }
 
-    // Keyword Matcher for Instant Library Hit (Works even without API Key!)
     function matchLocalLibrary(text) {
       const q = text.toLowerCase();
       if (q.includes('engine') || q.includes('motor') || q.includes('محرك') || q.includes('مكبس')) return 'engine';
@@ -412,7 +408,6 @@
 
       if (!promptText && !imageFile) { status.innerText = t.errNoInput; return; }
 
-      // Step 1: Check if request matches our High-Precision GLB Library first!
       if (promptText && !imageFile) {
         const matchedKey = matchLocalLibrary(promptText);
         if (matchedKey) {
@@ -421,7 +416,6 @@
         }
       }
 
-      // Step 2: If not in library, use AI Procedural Generator
       if (!apiKey) { status.innerText = t.errNoKey; return; }
 
       btn.disabled = true;
@@ -481,7 +475,7 @@ Return ONLY valid JSON:
       }
     };
 
-    // Load Pro 2-Cylinder Engine GLB by default on startup!
+    // Load Pro 2-Cylinder Engine GLB by default
     loadLibraryAsset('engine');
 
     window.addEventListener('resize', () => {
