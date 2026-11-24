@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,30 +13,41 @@
       --muted: #94a3b8;
       --border: rgba(148, 163, 184, 0.25);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, system-ui, sans-serif; }
     body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; }
 
     #canvas-container { flex: 1; position: relative; height: 100%; }
     canvas { display: block; width: 100%; height: 100%; }
 
     .top-bar {
-      position: absolute; top: 16px; left: 16px; z-index: 10;
+      position: absolute; top: 16px; left: 16px; right: 16px; z-index: 10;
+      display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+    }
+    .brand-box {
       background: var(--panel); backdrop-filter: blur(10px);
       padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border);
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 12px; pointer-events: auto;
     }
     .badge { background: var(--accent); color: #0f172a; font-weight: 700; font-size: 12px; padding: 3px 8px; border-radius: 6px; }
+
+    .lang-btn {
+      pointer-events: auto;
+      background: var(--panel); color: var(--accent); font-weight: 700;
+      border: 1px solid var(--accent); padding: 8px 14px; border-radius: 10px;
+      cursor: pointer; font-size: 13px; backdrop-filter: blur(10px); transition: 0.2s;
+    }
+    .lang-btn:hover { background: var(--accent); color: #0f172a; }
 
     .sidebar {
       width: 410px; max-width: 92vw; height: 100vh;
       background: var(--panel); backdrop-filter: blur(14px);
-      border-left: 1px solid var(--border);
+      border-inline-start: 1px solid var(--border);
       padding: 20px; display: flex; flex-direction: column; gap: 14px;
       overflow-y: auto; z-index: 20;
     }
     h1 { font-size: 19px; font-weight: 700; color: var(--accent); }
     h2 { font-size: 15px; margin-bottom: 4px; }
-    p { font-size: 13px; line-height: 1.5; color: #cbd5e1; }
+    p { font-size: 13px; line-height: 1.6; color: #cbd5e1; }
 
     .box {
       background: rgba(15, 23, 42, 0.65); padding: 12px; border-radius: 10px;
@@ -64,7 +75,7 @@
     }
 
     .quiz-option {
-      width: 100%; text-align: left; background: rgba(15, 23, 42, 0.85);
+      width: 100%; text-align: start; background: rgba(15, 23, 42, 0.85);
       color: var(--text); border: 1px solid var(--border); padding: 8px 10px;
       border-radius: 8px; cursor: pointer; font-size: 12px; margin-top: 5px;
     }
@@ -81,7 +92,7 @@
     @media (max-width: 768px) {
       body { flex-direction: column; }
       #canvas-container { height: 48vh; }
-      .sidebar { width: 100%; max-width: 100%; height: 52vh; border-left: none; border-top: 1px solid var(--border); }
+      .sidebar { width: 100%; max-width: 100%; height: 52vh; border-inline-start: none; border-top: 1px solid var(--border); }
     }
   </style>
 </head>
@@ -89,16 +100,19 @@
 
   <div id="canvas-container">
     <div class="top-bar">
-      <span class="badge">AI TO 3D ENGINE</span>
-      <span style="font-size: 13px; font-weight: 600;">Text & Image Interactive Visualizer</span>
+      <div class="brand-box">
+        <span class="badge">AI TO 3D ENGINE</span>
+        <span id="top-subtitle" style="font-size: 13px; font-weight: 600;">Text & Image Interactive Visualizer</span>
+      </div>
+      <button class="lang-btn" id="lang-toggle" onclick="toggleLanguage()">🌐 العربية</button>
     </div>
-    <div class="controls-hint">🖱️ Left Click: Rotate | Scroll: Zoom | Right Click: Pan</div>
+    <div class="controls-hint" id="controls-hint">🖱️ Left Click: Rotate | Scroll: Zoom | Right Click: Pan</div>
   </div>
 
   <aside class="sidebar">
     <div>
-      <h1>AI 3D Concept Generator</h1>
-      <p style="font-size: 12px; color: var(--muted);">Enter any physics problem, chemical formula, or upload a diagram (PNG/JPG) to render it in 3D.</p>
+      <h1 id="main-title">AI 3D Concept Generator</h1>
+      <p id="main-desc" style="font-size: 12px; color: var(--muted);">Enter any physics problem, chemical formula, or upload a diagram (PNG/JPG) to render it in 3D.</p>
     </div>
 
     <!-- AI Generator Input Box -->
@@ -108,9 +122,9 @@
       <input type="file" id="image-input" accept="image/png, image/jpeg, image/webp" />
       
       <div class="preset-row">
-        <span class="chip" onclick="setPrompt('Water molecule H2O with 1 oxygen and 2 hydrogen atoms')">💧 H2O Molecule</span>
-        <span class="chip" onclick="setPrompt('Solar system with sun and 3 orbiting planets')">🪐 Solar System</span>
-        <span class="chip" onclick="setPrompt('3D House with walls, pyramid roof, door, and windows')">🏠 3D House</span>
+        <span class="chip" id="chip-1" onclick="setPreset(1)">💧 H2O Molecule</span>
+        <span class="chip" id="chip-2" onclick="setPreset(2)">🪐 Solar System</span>
+        <span class="chip" id="chip-3" onclick="setPreset(3)">🏠 3D House</span>
       </div>
 
       <button class="btn-primary" id="generate-btn" onclick="generate3DScene()">✨ Generate 3D Model</button>
@@ -125,7 +139,7 @@
 
     <!-- Quiz Box -->
     <div class="box">
-      <h2 style="font-size: 14px; color: var(--accent);">Concept Verification</h2>
+      <h2 id="quiz-header" style="font-size: 14px; color: var(--accent);">Concept Verification</h2>
       <p id="quiz-question" style="font-size: 12px;">What is the approximate bond angle between the two hydrogen atoms in a water molecule?</p>
       <div id="quiz-options"></div>
     </div>
@@ -144,6 +158,103 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+    let currentLang = 'en';
+
+    const i18n = {
+      en: {
+        dir: 'ltr',
+        toggleBtn: '🌐 العربية',
+        topSubtitle: 'Text & Image Interactive Visualizer',
+        controlsHint: '🖱️ Left Click: Rotate | Scroll: Zoom | Right Click: Pan',
+        mainTitle: 'AI 3D Concept Generator',
+        mainDesc: 'Enter any physics problem, chemical formula, or upload a diagram (PNG/JPG) to render it in 3D.',
+        apiPlaceholder: 'Paste Free Gemini API Key (aistudio.google.com)',
+        promptPlaceholder: 'Describe a concept or problem (e.g., Water molecule H2O, Solar system, or a 3D house)...',
+        chip1: '💧 H2O Molecule',
+        chip2: '🪐 Solar System',
+        chip3: '🏠 3D House',
+        preset1: 'Water molecule H2O with 1 oxygen and 2 hydrogen atoms',
+        preset2: 'Solar system with sun and 3 orbiting planets',
+        preset3: '3D House with walls, pyramid roof, door, and windows',
+        generateBtn: '✨ Generate 3D Model',
+        quizHeader: 'Concept Verification',
+        errNoKey: '⚠️ Please paste a free Gemini API key first.',
+        errNoInput: '⚠️ Enter a description or upload an image.',
+        generating: '⏳ Generating with ',
+        success: '✅ 3D Scene generated successfully!',
+        defaultTitle: 'Water Molecule (H2O)',
+        defaultDesc: 'A water molecule consists of one central oxygen atom (red) covalently bonded to two hydrogen atoms (cyan) at a bent angle of 104.5 degrees.',
+        defaultQ: 'What is the approximate bond angle between the two hydrogen atoms in H2O?',
+        defaultOpts: [
+          { text: '104.5 degrees', correct: true },
+          { text: '180 degrees (Linear)', correct: false },
+          { text: '90 degrees', correct: false }
+        ]
+      },
+      ar: {
+        dir: 'rtl',
+        toggleBtn: '🌐 English',
+        topSubtitle: 'محرك تحويل النصوص والصور إلى مجسمات ثلاثية الأبعاد',
+        controlsHint: '🖱️ زر يسار: تدوير | عجلة الماوس: تقريب | زر يمين: تحريك',
+        mainTitle: 'مولد المفاهيم ثلاثية الأبعاد بالذكاء الاصطناعي',
+        mainDesc: 'اكتب أي مسألة فيزيائية أو صيغة كيميائية أو ارفع صورة رسمة تعليمية لتحويلها فوراً إلى مجسم 3D تفاعلي.',
+        apiPlaceholder: 'ألصق مفتاح Gemini API المجاني هنا',
+        promptPlaceholder: 'اكتب وصفاً أو مسألة (مثال: جزيء الماء H2O، المجموعة الشمسية، أو منزل ثلاثي الأبعاد)...',
+        chip1: '💧 جزيء الماء H2O',
+        chip2: '🪐 المجموعة الشمسية',
+        chip3: '🏠 منزل 3D',
+        preset1: 'جزيء الماء H2O مكون من ذرة أكسجين واحدة وذرتي هيدروجين',
+        preset2: 'المجموعة الشمسية مع الشمس و 3 كواكب تدور حولها',
+        preset3: 'منزل ثلاثي الأبعاد بجدران وسقف هرمي وباب ونوافذ',
+        generateBtn: '✨ توليد المجسم ثلاثي الأبعاد',
+        quizHeader: 'اختبر فهمك للدرس',
+        errNoKey: '⚠️ يرجى لصق مفتاح Gemini API المجاني أولاً.',
+        errNoInput: '⚠️ اكتب وصفاً للمسألة أو اختر صورة أولاً.',
+        generating: '⏳ جاري التحليل وبناء المجسم عبر ',
+        success: '✅ تم توليد المجسم ثلاثي الأبعاد بنجاح!',
+        defaultTitle: 'مثال افتراضي: جزيء الماء (H2O)',
+        defaultDesc: 'يتكون جزيء الماء من ذرة أكسجين مركزية (حمراء) مرتبطة تساهمياً بذرتي هيدروجين (زرقاء) بزاوية انحناء تبلغ حوالي 104.5 درجة.',
+        defaultQ: 'كم تبلغ الزاوية التقريبية بين ذرتي الهيدروجين في جزيء الماء؟',
+        defaultOpts: [
+          { text: '104.5 درجة', correct: true },
+          { text: '180 درجة (خطي)', correct: false },
+          { text: '90 درجة', correct: false }
+        ]
+      }
+    };
+
+    window.toggleLanguage = function () {
+      currentLang = currentLang === 'en' ? 'ar' : 'en';
+      const t = i18n[currentLang];
+
+      document.documentElement.lang = currentLang;
+      document.documentElement.dir = t.dir;
+
+      document.getElementById('lang-toggle').innerText = t.toggleBtn;
+      document.getElementById('top-subtitle').innerText = t.topSubtitle;
+      document.getElementById('controls-hint').innerText = t.controlsHint;
+      document.getElementById('main-title').innerText = t.mainTitle;
+      document.getElementById('main-desc').innerText = t.mainDesc;
+      document.getElementById('api-key').placeholder = t.apiPlaceholder;
+      document.getElementById('prompt-input').placeholder = t.promptPlaceholder;
+      document.getElementById('chip-1').innerText = t.chip1;
+      document.getElementById('chip-2').innerText = t.chip2;
+      document.getElementById('chip-3').innerText = t.chip3;
+      document.getElementById('generate-btn').innerText = t.generateBtn;
+      document.getElementById('quiz-header').innerText = t.quizHeader;
+
+      // Update default lesson texts if user hasn't generated a custom one yet
+      document.getElementById('lesson-title').innerText = t.defaultTitle;
+      document.getElementById('lesson-desc').innerText = t.defaultDesc;
+      renderQuiz({ question: t.defaultQ, options: t.defaultOpts });
+    };
+
+    window.setPreset = function (num) {
+      const t = i18n[currentLang];
+      document.getElementById('prompt-input').value = t['preset' + num];
+    };
+
+    // Three.js Setup
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f172a);
@@ -178,15 +289,25 @@
       localStorage.setItem('gemini_3d_key', apiKeyInput.value.trim());
     });
 
-    window.setPrompt = (txt) => {
-      document.getElementById('prompt-input').value = txt;
-    };
+    function renderQuiz(quizData) {
+      if (!quizData) return;
+      document.getElementById('quiz-question').innerText = quizData.question;
+      const qDiv = document.getElementById('quiz-options');
+      qDiv.innerHTML = '';
+      (quizData.options || []).forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.innerText = opt.text;
+        btn.onclick = () => btn.classList.add(opt.correct ? 'correct' : 'wrong');
+        qDiv.appendChild(btn);
+      });
+    }
 
     function renderSceneFromJSON(data) {
       while (activeGroup.children.length > 0) activeGroup.remove(activeGroup.children[0]);
       animatedItems = [];
 
-      document.getElementById('lesson-title').innerText = data.title || '3D Generated Model';
+      document.getElementById('lesson-title').innerText = data.title || '3D Model';
       document.getElementById('lesson-desc').innerText = data.description || '';
 
       (data.objects || []).forEach(obj => {
@@ -213,18 +334,7 @@
         }
       });
 
-      if (data.quiz) {
-        document.getElementById('quiz-question').innerText = data.quiz.question;
-        const qDiv = document.getElementById('quiz-options');
-        qDiv.innerHTML = '';
-        (data.quiz.options || []).forEach(opt => {
-          const btn = document.createElement('button');
-          btn.className = 'quiz-option';
-          btn.innerText = opt.text;
-          btn.onclick = () => btn.classList.add(opt.correct ? 'correct' : 'wrong');
-          qDiv.appendChild(btn);
-        });
-      }
+      renderQuiz(data.quiz);
     }
 
     function fileToBase64(file) {
@@ -237,28 +347,25 @@
     }
 
     window.generate3DScene = async function () {
+      const t = i18n[currentLang];
       const apiKey = apiKeyInput.value.trim();
       const promptText = document.getElementById('prompt-input').value.trim();
       const imageFile = document.getElementById('image-input').files[0];
       const status = document.getElementById('status-msg');
       const btn = document.getElementById('generate-btn');
 
-      if (!apiKey) {
-        status.innerText = '⚠️ Please paste a free Gemini API key first.';
-        return;
-      }
-      if (!promptText && !imageFile) {
-        status.innerText = '⚠️ Enter a description or upload an image.';
-        return;
-      }
+      if (!apiKey) { status.innerText = t.errNoKey; return; }
+      if (!promptText && !imageFile) { status.innerText = t.errNoInput; return; }
 
       btn.disabled = true;
+      const targetLangName = currentLang === 'ar' ? 'Arabic' : 'English';
 
       const systemInstruction = `You are a 3D visualization architect. Convert the user's text problem or uploaded image into a detailed 3D geometric scene composed of multiple 3D primitives (spheres, boxes, cylinders, cones, torus).
+Write the "title", "description", and "quiz" fields strictly in ${targetLangName}.
 Respond ONLY with valid JSON (no markdown fences) matching this exact schema:
 {
-  "title": "Short title",
-  "description": "Clear explanation",
+  "title": "Short title in ${targetLangName}",
+  "description": "Clear explanation in ${targetLangName}",
   "objects": [
     {
       "shape": "sphere | box | cylinder | cone | torus",
@@ -271,10 +378,10 @@ Respond ONLY with valid JSON (no markdown fences) matching this exact schema:
     }
   ],
   "quiz": {
-    "question": "Concept check question",
+    "question": "Concept check question in ${targetLangName}",
     "options": [
-      {"text": "Option A", "correct": true},
-      {"text": "Option B", "correct": false}
+      {"text": "Option A in ${targetLangName}", "correct": true},
+      {"text": "Option B in ${targetLangName}", "correct": false}
     ]
   }
 }
@@ -284,9 +391,7 @@ Keep coordinates within -4 to +4 so all parts fit nicely in view.`;
 
       if (imageFile) {
         const base64Data = await fileToBase64(imageFile);
-        parts.push({
-          inline_data: { mime_type: imageFile.type, data: base64Data }
-        });
+        parts.push({ inline_data: { mime_type: imageFile.type, data: base64Data } });
       }
 
       const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
@@ -295,7 +400,7 @@ Keep coordinates within -4 to +4 so all parts fit nicely in view.`;
 
       try {
         for (const modelName of models) {
-          status.innerText = `⏳ Generating with ${modelName}...`;
+          status.innerText = `${t.generating}${modelName}...`;
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -314,12 +419,12 @@ Keep coordinates within -4 to +4 so all parts fit nicely in view.`;
           break;
         }
 
-        if (!sceneData) throw new Error(lastError || 'All models are currently busy, please retry.');
+        if (!sceneData) throw new Error(lastError || 'Models busy, please retry.');
 
         renderSceneFromJSON(sceneData);
-        status.innerText = '✅ 3D Scene generated successfully!';
+        status.innerText = t.success;
       } catch (err) {
-        status.innerText = '❌ Error: ' + err.message;
+        status.innerText = '❌ ' + err.message;
       } finally {
         btn.disabled = false;
       }
@@ -327,8 +432,8 @@ Keep coordinates within -4 to +4 so all parts fit nicely in view.`;
 
     // Initial Default Scene (H2O Molecule)
     renderSceneFromJSON({
-      title: "Water Molecule (H2O)",
-      description: "A water molecule consists of one central oxygen atom (red) covalently bonded to two hydrogen atoms (cyan) at a bent angle of 104.5 degrees.",
+      title: i18n.en.defaultTitle,
+      description: i18n.en.defaultDesc,
       objects: [
         { shape: "sphere", color: "#ef4444", size: [0.85, 1, 1], position: [0, 0.3, 0] },
         { shape: "sphere", color: "#38bdf8", size: [0.5, 1, 1], position: [-1.4, -0.7, 0] },
@@ -336,14 +441,7 @@ Keep coordinates within -4 to +4 so all parts fit nicely in view.`;
         { shape: "cylinder", color: "#94a3b8", size: [0.12, 1.6, 1], position: [-0.7, -0.2, 0], rotation: [0, 0, -0.95] },
         { shape: "cylinder", color: "#94a3b8", size: [0.12, 1.6, 1], position: [0.7, -0.2, 0], rotation: [0, 0, 0.95] }
       ],
-      quiz: {
-        question: "What is the approximate bond angle between the two hydrogen atoms in H2O?",
-        options: [
-          { text: "104.5 degrees", correct: true },
-          { text: "180 degrees (Linear)", correct: false },
-          { text: "90 degrees", correct: false }
-        ]
-      }
+      quiz: { question: i18n.en.defaultQ, options: i18n.en.defaultOpts }
     });
 
     window.addEventListener('resize', () => {
