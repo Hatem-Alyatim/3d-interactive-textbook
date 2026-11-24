@@ -76,7 +76,7 @@
       background: var(--panel); padding: 8px 14px; border-radius: 8px;
       font-size: 12px; color: var(--muted); border: 1px solid var(--border);
     }
-    #status-msg { font-size: 12px; color: #fbbf24; }
+    #status-msg { font-size: 12px; color: #fbbf24; word-break: break-word; }
 
     @media (max-width: 768px) {
       body { flex-direction: column; }
@@ -98,19 +98,19 @@
   <aside class="sidebar">
     <div>
       <h1>AI 3D Concept Generator</h1>
-      <p style="font-size: 12px; color: var(--muted);">Enter any physics problem, chemical formula, or upload a diagram to render it in 3D.</p>
+      <p style="font-size: 12px; color: var(--muted);">Enter any physics problem, chemical formula, or upload a diagram (PNG/JPG) to render it in 3D.</p>
     </div>
 
     <!-- AI Generator Input Box -->
     <div class="box">
       <input type="password" id="api-key" placeholder="Paste Free Gemini API Key (aistudio.google.com)" />
-      <textarea id="prompt-input" placeholder="Describe a concept or problem (e.g., Water molecule H2O geometry, Solar system orbits, or Projectile motion)..."></textarea>
-      <input type="file" id="image-input" accept="image/*" />
+      <textarea id="prompt-input" placeholder="Describe a concept or problem (e.g., Water molecule H2O geometry, Solar system orbits, or a 3D house)..."></textarea>
+      <input type="file" id="image-input" accept="image/png, image/jpeg, image/webp" />
       
       <div class="preset-row">
         <span class="chip" onclick="setPrompt('Water molecule H2O with 1 oxygen and 2 hydrogen atoms')">💧 H2O Molecule</span>
-        <span class="chip" onclick="setPrompt('Simple pendulum swinging with pivot and bob')">⏱️ Pendulum</span>
-        <span class="chip" onclick="setPrompt('3D Cartesian coordinate axes X Y Z with a vector arrow')">📐 3D Vector</span>
+        <span class="chip" onclick="setPrompt('Solar system with sun and 3 orbiting planets')">🪐 Solar System</span>
+        <span class="chip" onclick="setPrompt('3D House with walls, pyramid roof, door, and windows')">🏠 3D House</span>
       </div>
 
       <button class="btn-primary" id="generate-btn" onclick="generate3DScene()">✨ Generate 3D Model</button>
@@ -149,7 +149,7 @@
     scene.background = new THREE.Color(0x0f172a);
 
     const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(0, 3, 9);
+    camera.position.set(0, 3.5, 9.5);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -159,7 +159,7 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
     dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
@@ -172,7 +172,6 @@
     scene.add(activeGroup);
     let animatedItems = [];
 
-    // Load saved API key if exists
     const apiKeyInput = document.getElementById('api-key');
     apiKeyInput.value = localStorage.getItem('gemini_3d_key') || '';
     apiKeyInput.addEventListener('change', () => {
@@ -183,7 +182,6 @@
       document.getElementById('prompt-input').value = txt;
     };
 
-    // Universal JSON-to-3D Scene Builder
     function renderSceneFromJSON(data) {
       while (activeGroup.children.length > 0) activeGroup.remove(activeGroup.children[0]);
       animatedItems = [];
@@ -195,7 +193,8 @@
         let geo;
         const size = obj.size || [1, 1, 1];
         if (obj.shape === 'sphere') geo = new THREE.SphereGeometry(size[0], 28, 28);
-        else if (obj.shape === 'cylinder') geo = new THREE.CylinderGeometry(size[0], size[0], size[1], 20);
+        else if (obj.shape === 'cylinder') geo = new THREE.CylinderGeometry(size[0], size[0], size[1], 24);
+        else if (obj.shape === 'cone') geo = new THREE.ConeGeometry(size[0], size[1], 4);
         else if (obj.shape === 'torus') geo = new THREE.TorusGeometry(size[0], size[1] || 0.05, 16, 64);
         else geo = new THREE.BoxGeometry(size[0], size[1], size[2]);
 
@@ -209,12 +208,11 @@
         mesh.rotation.set(...(obj.rotation || [0, 0, 0]));
         activeGroup.add(mesh);
 
-        if (obj.orbitRadius) {
+        if (obj.orbitRadius && obj.orbitRadius > 0) {
           animatedItems.push({ mesh, radius: obj.orbitRadius, speed: obj.orbitSpeed || 1.2 });
         }
       });
 
-      // Render Quiz
       if (data.quiz) {
         document.getElementById('quiz-question').innerText = data.quiz.question;
         const qDiv = document.getElementById('quiz-options');
@@ -229,7 +227,6 @@
       }
     }
 
-    // Convert Image File to Base64
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -256,16 +253,15 @@
       }
 
       btn.disabled = true;
-      status.innerText = '⏳ Analyzing input and building 3D scene...';
 
-      const systemInstruction = `You are a 3D STEM visualization engine. Convert the user's text problem or uploaded image into a 3D scene specification.
+      const systemInstruction = `You are a 3D visualization architect. Convert the user's text problem or uploaded image into a detailed 3D geometric scene composed of multiple 3D primitives (spheres, boxes, cylinders, cones, torus).
 Respond ONLY with valid JSON (no markdown fences) matching this exact schema:
 {
   "title": "Short title",
-  "description": "Clear scientific explanation",
+  "description": "Clear explanation",
   "objects": [
     {
-      "shape": "sphere | box | cylinder | torus",
+      "shape": "sphere | box | cylinder | cone | torus",
       "color": "#hexcolor",
       "size": [radius_or_width, height, depth],
       "position": [x, y, z],
@@ -282,9 +278,9 @@ Respond ONLY with valid JSON (no markdown fences) matching this exact schema:
     ]
   }
 }
-Keep coordinates within -4 to +4 so all parts are clearly visible.`;
+Keep coordinates within -4 to +4 so all parts fit nicely in view.`;
 
-      const parts = [{ text: systemInstruction + "\n\nUser request: " + (promptText || "Visualize the uploaded diagram in 3D.") }];
+      const parts = [{ text: systemInstruction + "\n\nUser request: " + (promptText || "Analyze the uploaded image and reconstruct its main structure in 3D.") }];
 
       if (imageFile) {
         const base64Data = await fileToBase64(imageFile);
@@ -293,19 +289,32 @@ Keep coordinates within -4 to +4 so all parts are clearly visible.`;
         });
       }
 
+      const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+      let sceneData = null;
+      let lastError = '';
+
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts }] })
-        });
+        for (const modelName of models) {
+          status.innerText = `⏳ Generating with ${modelName}...`;
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts }] })
+          });
 
-        const result = await res.json();
-        if (result.error) throw new Error(result.error.message);
+          const result = await res.json();
+          if (result.error) {
+            lastError = result.error.message;
+            continue;
+          }
 
-        let rawText = result.candidates[0].content.parts[0].text.trim();
-        rawText = rawText.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-        const sceneData = JSON.parse(rawText);
+          let rawText = result.candidates[0].content.parts[0].text.trim();
+          rawText = rawText.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+          sceneData = JSON.parse(rawText);
+          break;
+        }
+
+        if (!sceneData) throw new Error(lastError || 'All models are currently busy, please retry.');
 
         renderSceneFromJSON(sceneData);
         status.innerText = '✅ 3D Scene generated successfully!';
