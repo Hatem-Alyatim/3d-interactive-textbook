@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Interactive Textbook Engine</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(30, 41, 59, 0.88);
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: rgba(148, 163, 184, 0.2);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; }
+
+    /* 3D Canvas Container */
+    #canvas-container { flex: 1; position: relative; height: 100%; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Top Badge */
+    .top-bar {
+      position: absolute; top: 16px; left: 16px; z-index: 10;
+      background: var(--panel); backdrop-filter: blur(10px);
+      padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .badge { background: var(--accent); color: #0f172a; font-weight: 700; font-size: 12px; padding: 3px 8px; border-radius: 6px; }
+
+    /* Side Control & Lesson Panel */
+    .sidebar {
+      width: 380px; max-width: 90vw; height: 100vh;
+      background: var(--panel); backdrop-filter: blur(14px);
+      border-left: 1px solid var(--border);
+      padding: 24px; display: flex; flex-direction: column; gap: 18px;
+      overflow-y: auto; z-index: 20;
+    }
+    h1 { font-size: 20px; font-weight: 700; color: var(--accent); }
+    h2 { font-size: 16px; margin-bottom: 6px; }
+    p { font-size: 14px; line-height: 1.6; color: #cbd5e1; }
+
+    /* Lesson Selector Buttons */
+    .lesson-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .tab-btn {
+      background: rgba(15, 23, 42, 0.7); color: var(--muted);
+      border: 1px solid var(--border); padding: 10px 6px; border-radius: 8px;
+      cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
+    }
+    .tab-btn.active, .tab-btn:hover { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+
+    /* Interactive Controls */
+    .control-box {
+      background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 10px;
+      border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px;
+    }
+    label { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
+    /* Quiz Box */
+    .quiz-option {
+      width: 100%; text-align: left; background: rgba(15, 23, 42, 0.8);
+      color: var(--text); border: 1px solid var(--border); padding: 10px 12px;
+      border-radius: 8px; cursor: pointer; font-size: 13px; margin-top: 6px; transition: 0.2s;
+    }
+    .quiz-option:hover { border-color: var(--accent); }
+    .quiz-option.correct { background: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #86efac; }
+    .quiz-option.wrong { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; }
+
+    .controls-hint {
+      position: absolute; bottom: 16px; left: 16px;
+      background: var(--panel); padding: 8px 14px; border-radius: 8px;
+      font-size: 12px; color: var(--muted); border: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      #canvas-container { height: 52vh; }
+      .sidebar { width: 100%; max-width: 100%; height: 48vh; border-left: none; border-top: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="canvas-container">
+    <div class="top-bar">
+      <span class="badge">3D EDU ENGINE</span>
+      <span style="font-size: 14px; font-weight: 600;">Interactive Curriculum Visualizer</span>
+    </div>
+    <div class="controls-hint">🖱️ Left Click: Rotate | Scroll: Zoom | Right Click: Pan</div>
+  </div>
+
+  <aside class="sidebar">
+    <div>
+      <h1>3D Textbook Platform</h1>
+      <p style="font-size: 12px; color: var(--muted);">Select a STEM module to explore in real-time 3D</p>
+    </div>
+
+    <div class="lesson-tabs">
+      <button class="tab-btn active" onclick="loadLesson('atom')">⚛️ Chemistry</button>
+      <button class="tab-btn" onclick="loadLesson('physics')">🚀 Physics</button>
+      <button class="tab-btn" onclick="loadLesson('biology')">🧬 Biology</button>
+    </div>
+
+    <div id="lesson-content">
+      <h2 id="lesson-title">Atomic Structure (Bohr Model)</h2>
+      <p id="lesson-desc">Atoms consist of a dense central nucleus containing protons and neutrons, surrounded by electrons orbiting in quantized energy shells.</p>
+    </div>
+
+    <div class="control-box">
+      <label>
+        <span>Simulation Speed</span>
+        <span id="speed-val">1.0x</span>
+      </label>
+      <input type="range" id="speed-slider" min="0" max="3" step="0.1" value="1" />
+
+      <label>
+        <span>Explode / Scale View</span>
+        <span id="scale-val">100%</span>
+      </label>
+      <input type="range" id="scale-slider" min="0.5" max="1.8" step="0.1" value="1" />
+    </div>
+
+    <div class="control-box">
+      <h2 style="font-size: 14px; color: var(--accent);">Quick Concept Check</h2>
+      <p id="quiz-question" style="font-size: 13px;">Which subatomic particle carries a negative charge and orbits the nucleus?</p>
+      <div id="quiz-options"></div>
+    </div>
+  </aside>
+
+  <!-- Three.js & OrbitControls via CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // Scene Setup
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a);
+
+    const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 4, 10);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0x38bdf8, 2, 50);
+    pointLight.position.set(5, 8, 5);
+    scene.add(pointLight);
+
+    // Grid Helper
+    const grid = new THREE.GridHelper(16, 16, 0x334155, 0x1e293b);
+    grid.position.y = -3;
+    scene.add(grid);
+
+    // Active Model Group
+    let activeGroup = new THREE.Group();
+    scene.add(activeGroup);
+
+    let simSpeed = 1.0;
+    let currentMode = 'atom';
+    let animatedObjects = [];
+
+    // Lesson Database (Can be loaded externally from Python JSON output)
+    const lessonsData = {
+      atom: {
+        title: "Atomic Structure (Bohr Model)",
+        desc: "Atoms consist of a dense central nucleus containing positively charged protons (red) and neutral neutrons (gray), surrounded by negatively charged electrons (cyan) orbiting in energy shells.",
+        question: "Which subatomic particle carries a negative charge and orbits the nucleus?",
+        options: [
+          { text: "Proton", correct: false },
+          { text: "Electron", correct: true },
+          { text: "Neutron", correct: false }
+        ]
+      },
+      physics: {
+        title: "Orbital Mechanics & Gravity",
+        desc: "According to Newton's law of universal gravitation, a satellite remains in stable orbit when its tangential velocity balances the gravitational pull of the central body.",
+        question: "What keeps a planet or satellite in a curved orbit instead of flying off in a straight line?",
+        options: [
+          { text: "Gravitational centripetal force", correct: true },
+          { text: "Atmospheric friction", correct: false },
+          { text: "Magnetic repulsion", correct: false }
+        ]
+      },
+      biology: {
+        title: "DNA Double Helix Structure",
+        desc: "Deoxyribonucleic acid (DNA) consists of two complementary strands winding around each other in a double helix, connected by hydrogen bonds between base pairs.",
+        question: "What shape describes the three-dimensional structure of a DNA molecule?",
+        options: [
+          { text: "Single linear chain", correct: false },
+          { text: "Double helix", correct: true },
+          { text: "Cubic lattice", correct: false }
+        ]
+      }
+    };
+
+    function clearScene() {
+      while (activeGroup.children.length > 0) {
+        activeGroup.remove(activeGroup.children[0]);
+      }
+      animatedObjects = [];
+    }
+
+    function buildAtom() {
+      // Nucleus
+      const protonMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
+      const neutronMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4 });
+      const sphereGeo = new THREE.SphereGeometry(0.35, 24, 24);
+
+      for (let i = 0; i < 8; i++) {
+        const mesh = new THREE.Mesh(sphereGeo, i % 2 === 0 ? protonMat : neutronMat);
+        mesh.position.set(
+          (Math.random() - 0.5) * 0.7,
+          (Math.random() - 0.5) * 0.7,
+          (Math.random() - 0.5) * 0.7
+        );
+        activeGroup.add(mesh);
+      }
+
+      // Orbits & Electrons
+      const electronGeo = new THREE.SphereGeometry(0.18, 16, 16);
+      const electronMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7 });
+
+      [2.2, 3.4].forEach((radius, idx) => {
+        const ringGeo = new THREE.RingGeometry(radius - 0.02, radius + 0.02, 64);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x475569, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2 + (idx * 0.5);
+        ring.rotation.y = idx * 0.6;
+        activeGroup.add(ring);
+
+        const electron = new THREE.Mesh(electronGeo, electronMat);
+        activeGroup.add(electron);
+        animatedObjects.push({ type: 'orbit', mesh: electron, radius, speed: (idx + 1) * 1.5, tilt: idx * 0.6 });
+      });
+    }
+
+    function buildPhysics() {
+      // Central Star / Planet
+      const sunGeo = new THREE.SphereGeometry(1.1, 32, 32);
+      const sunMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.5 });
+      const sun = new THREE.Mesh(sunGeo, sunMat);
+      activeGroup.add(sun);
+
+      // Orbiting Bodies
+      const colors = [0x38bdf8, 0x10b981, 0xa855f7];
+      [2.3, 3.5, 4.7].forEach((radius, i) => {
+        const orbitLine = new THREE.Mesh(
+          new THREE.RingGeometry(radius - 0.02, radius + 0.02, 64),
+          new THREE.MeshBasicMaterial({ color: 0x334155, side: THREE.DoubleSide })
+        );
+        orbitLine.rotation.x = Math.PI / 2;
+        activeGroup.add(orbitLine);
+
+        const planet = new THREE.Mesh(
+          new THREE.SphereGeometry(0.25 + i * 0.06, 24, 24),
+          new THREE.MeshStandardMaterial({ color: colors[i] })
+        );
+        activeGroup.add(planet);
+        animatedObjects.push({ type: 'planet', mesh: planet, radius, speed: 1.8 / (i + 1), offset: i * 2 });
+      });
+    }
+
+    function buildBiology() {
+      const pairs = 16;
+      const heightStep = 0.35;
+      const radius = 1.4;
+      const strand1Mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8 });
+      const strand2Mat = new THREE.MeshStandardMaterial({ color: 0xf43f5e });
+      const bondMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
+
+      for (let i = 0; i < pairs; i++) {
+        const y = (i - pairs / 2) * heightStep;
+        const angle = i * 0.45;
+
+        const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), strand1Mat);
+        b1.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+
+        const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), strand2Mat);
+        b2.position.set(Math.cos(angle + Math.PI) * radius, y, Math.sin(angle + Math.PI) * radius);
+
+        const barGeo = new THREE.CylinderGeometry(0.05, 0.05, radius * 2, 8);
+        const bar = new THREE.Mesh(barGeo, bondMat);
+        bar.position.set(0, y, 0);
+        bar.rotation.z = Math.PI / 2;
+        bar.rotation.y = -angle;
+
+        activeGroup.add(b1, b2, bar);
+      }
+      animatedObjects.push({ type: 'spin', mesh: activeGroup });
+    }
+
+    window.loadLesson = function(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const data = lessonsData[mode];
+      document.getElementById('lesson-title').innerText = data.title;
+      document.getElementById('lesson-desc').innerText = data.desc;
+      document.getElementById('quiz-question').innerText = data.question;
+
+      const optionsDiv = document.getElementById('quiz-options');
+      optionsDiv.innerHTML = '';
+      data.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.innerText = opt.text;
+        btn.onclick = () => {
+          btn.classList.add(opt.correct ? 'correct' : 'wrong');
+        };
+        optionsDiv.appendChild(btn);
+      });
+
+      clearScene();
+      activeGroup.rotation.set(0, 0, 0);
+      if (mode === 'atom') buildAtom();
+      if (mode === 'physics') buildPhysics();
+      if (mode === 'biology') buildBiology();
+    };
+
+    // Sliders
+    document.getElementById('speed-slider').addEventListener('input', (e) => {
+      simSpeed = parseFloat(e.target.value);
+      document.getElementById('speed-val').innerText = simSpeed.toFixed(1) + 'x';
+    });
+
+    document.getElementById('scale-slider').addEventListener('input', (e) => {
+      const s = parseFloat(e.target.value);
+      activeGroup.scale.set(s, s, s);
+      document.getElementById('scale-val').innerText = Math.round(s * 100) + '%';
+    });
+
+    // Resize Handler
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime() * simSpeed;
+
+      animatedObjects.forEach(obj => {
+        if (obj.type === 'orbit') {
+          const angle = t * obj.speed;
+          obj.mesh.position.x = Math.cos(angle) * obj.radius;
+          obj.mesh.position.z = Math.sin(angle) * obj.radius;
+          obj.mesh.position.y = Math.sin(angle) * Math.sin(obj.tilt) * obj.radius;
+        } else if (obj.type === 'planet') {
+          const angle = t * obj.speed + obj.offset;
+          obj.mesh.position.x = Math.cos(angle) * obj.radius;
+          obj.mesh.position.z = Math.sin(angle) * obj.radius;
+        } else if (obj.type === 'spin') {
+          obj.mesh.rotation.y = t * 0.6;
+        }
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Initialize default lesson
+    buildAtom();
+    const initQuiz = lessonsData.atom;
+    const optionsDiv = document.getElementById('quiz-options');
+    initQuiz.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-option';
+      btn.innerText = opt.text;
+      btn.onclick = () => btn.classList.add(opt.correct ? 'correct' : 'wrong');
+      optionsDiv.appendChild(btn);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
