@@ -118,7 +118,7 @@
     <!-- AI Generator Input Box -->
     <div class="box">
       <input type="password" id="api-key" placeholder="Paste Free Gemini API Key (aistudio.google.com)" />
-      <textarea id="prompt-input" placeholder="Describe a concept or problem (e.g., Water molecule H2O geometry, Solar system orbits, or a 3D house)..."></textarea>
+      <textarea id="prompt-input" placeholder="Describe a concept or problem (e.g., Water molecule H2O, Solar system, or a 3D house)..."></textarea>
       <input type="file" id="image-input" accept="image/png, image/jpeg, image/webp" />
       
       <div class="preset-row">
@@ -243,7 +243,6 @@
       document.getElementById('generate-btn').innerText = t.generateBtn;
       document.getElementById('quiz-header').innerText = t.quizHeader;
 
-      // Update default lesson texts if user hasn't generated a custom one yet
       document.getElementById('lesson-title').innerText = t.defaultTitle;
       document.getElementById('lesson-desc').innerText = t.defaultDesc;
       renderQuiz({ question: t.defaultQ, options: t.defaultOpts });
@@ -360,9 +359,9 @@
       btn.disabled = true;
       const targetLangName = currentLang === 'ar' ? 'Arabic' : 'English';
 
-      const systemInstruction = `You are a 3D visualization architect. Convert the user's text problem or uploaded image into a detailed 3D geometric scene composed of multiple 3D primitives (spheres, boxes, cylinders, cones, torus).
+      const systemInstruction = `You are a 3D STEM and engineering visualization architect. Convert the user's text problem or uploaded image into a detailed 3D geometric scene composed of multiple 3D primitives (spheres, boxes, cylinders, cones, torus).
 Write the "title", "description", and "quiz" fields strictly in ${targetLangName}.
-Respond ONLY with valid JSON (no markdown fences) matching this exact schema:
+Return pure JSON without comments matching this exact schema:
 {
   "title": "Short title in ${targetLangName}",
   "description": "Clear explanation in ${targetLangName}",
@@ -404,7 +403,12 @@ Keep coordinates within -4 to +4 so all parts fit nicely in view.`;
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts }] })
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: {
+                responseMimeType: "application/json"
+              }
+            })
           });
 
           const result = await res.json();
